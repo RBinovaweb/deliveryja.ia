@@ -49,8 +49,25 @@ const money=v=>Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"B
 const esc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
 onValue(ref(db,"settings"),s=>{if(s.exists())settings={...settings,...s.val()};document.getElementById("pixKey").textContent=settings.pixKey||"";document.getElementById("storeName").textContent=settings.storeName||"Ligeirinho ⚡";document.getElementById("storeDescription").textContent=settings.storeDescription||"";updateTotals()});
 onValue(ref(db,"products"),s=>{products=[];s.forEach(x=>{products.push({key:x.key,...x.val()})});products=products.filter(p=>p.active!==false);renderCategories();renderProducts(products)});
-function renderCategories(){let cats=[...new Set(products.map(p=>p.category).filter(Boolean))];document.getElementById("categories").innerHTML='<button class="cat active" onclick="filterProducts(\'Todos\',this)">Tudo</button>'+cats.map(c=>`<button class="cat" onclick="filterProducts(${JSON.stringify(c)},this)">${esc(c)}</button>`).join("")}
-window.filterProducts=(c,b)=>{document.querySelectorAll(".cat").forEach(x=>x.classList.remove("active"));b.classList.add("active");renderProducts(c==="Todos"?products:products.filter(p=>p.category===c))};
+
+function renderCategories(){
+  let cats=[...new Set(products.map(p=>p.category).filter(Boolean))];
+  document.getElementById("categories").innerHTML=
+    '<button class="cat active" data-cat="Todos" onclick="filterProducts(this)">Tudo</button>'
+    + cats.map(c=>`<button class="cat" data-cat="${esc(c)}" onclick="filterProducts(this)">${esc(c)}</button>`).join("");
+}
+
+window.filterProducts=(botao)=>{
+  const categoriaEscolhida = botao.dataset.cat;
+  document.querySelectorAll(".cat").forEach(x=>x.classList.remove("active"));
+  botao.classList.add("active");
+  if(categoriaEscolhida === "Todos"){
+    renderProducts(products);
+  }else{
+    renderProducts(products.filter(p=>p.category === categoriaEscolhida));
+  }
+};
+
 function renderProducts(list){let el=document.getElementById("products");if(!list.length){el.innerHTML="<p>Nenhum produto disponível.</p>";return}el.innerHTML=list.map(p=>`<article class="product"><img src="${esc(p.image||"")}" alt="${esc(p.name)}" loading="lazy"><div class="info"><div class="pcat">${esc(p.category)}</div><h3>${esc(p.name)}</h3><div class="desc">${esc(p.description)}</div><div class="price">${money(p.price)}</div><button class="add" onclick="addToCart('${p.key}')">+ ADICIONAR</button></div></article>`).join("")}
 window.addToCart=id=>{let p=products.find(x=>x.key===id);if(!p)return;if(p.alcohol&&!confirm("Este produto contém bebida alcoólica. Você confirma que é maior de 18 anos?"))return;let x=cart.find(i=>i.id===id);x?x.quantity++:cart.push({id,name:p.name,price:Number(p.price)||0,quantity:1,observation:"",alcohol:!!p.alcohol});renderCart();openCart();toast("Produto adicionado!")};
 window.changeQuantity=(id,n)=>{let x=cart.find(i=>i.id===id);if(!x)return;x.quantity+=n;if(x.quantity<=0)cart=cart.filter(i=>i.id!==id);renderCart()};
@@ -58,7 +75,7 @@ window.updateObs=(id,v)=>{let x=cart.find(i=>i.id===id);if(x)x.observation=v};
 window.removeItem=id=>{cart=cart.filter(i=>i.id!==id);renderCart()};
 function renderCart(){document.getElementById("cartCount").textContent=cart.reduce((a,x)=>a+x.quantity,0);let el=document.getElementById("cartItems");if(!cart.length){el.innerHTML='<div class="empty">🛒<br><br>Seu carrinho está vazio.</div>';updateTotals();return}el.innerHTML=cart.map(x=>`<div class="item"><div class="itemtop"><b>${esc(x.name)}</b><span class="itemprice">${money(x.price*x.quantity)}</span></div><small style="color:#999">${money(x.price)} cada</small><div class="qty"><button onclick="changeQuantity('${x.id}',-1)">−</button><span>${x.quantity}</span><button onclick="changeQuantity('${x.id}',1)">+</button></div><textarea class="obs" rows="2" placeholder="Observação deste item..." onchange="updateObs('${x.id}',this.value)">${esc(x.observation)}</textarea><button class="remove" onclick="removeItem('${x.id}')">🗑 Remover item</button></div>`).join("");updateTotals()}
 function subtotal(){return cart.reduce((a,x)=>a+x.price*x.quantity,0)}
-function updateTotals(){let s=subtotal(),fee=Number(settings.deliveryFee)||0;document.getElementById("subtotal").textContent=money(s);document.getElementById("deliveryFee").textContent=fee?money(fee):"A combinar";document.getElementById("total").textContent=money(s+fee)}
+function updateTotals(){let s=subtotal(), fee=Number(settings.deliveryFee)||0;document.getElementById("subtotal").textContent=money(s);document.getElementById("deliveryFee").textContent=fee?money(fee):"A combinar";document.getElementById("total").textContent=money(s+fee)}
 window.openCart=()=>{document.getElementById("cart").classList.add("open");document.getElementById("overlay").classList.add("show");document.body.style.overflow="hidden"};
 window.closeCart=()=>{document.getElementById("cart").classList.remove("open");document.getElementById("overlay").classList.remove("show");document.body.style.overflow=""};
 window.copyPix=async()=>{try{await navigator.clipboard.writeText(settings.pixKey||"");toast("Chave Pix copiada!")}catch(e){toast("Não foi possível copiar.")}};
@@ -154,4 +171,5 @@ document.getElementById("customerCep").addEventListener("input",e=>{let v=e.targ
 document.getElementById("customerPhone").addEventListener("input",e=>{let v=e.target.value.replace(/\D/g,"").slice(0,11);if(v.length>10)v=v.replace(/^(\d{2})(\d{5})(\d{0,4})$/,"($1) $2-$3");else if(v.length>=6)v=v.replace(/^(\d{2})(\d{4})(\d{0,4})$/,"($1) $2-$3");else if(v.length>=2)v=v.replace(/^(\d{2})(\d*)$/,"($1) $2");e.target.value=v});
 </script>
 </body>
-</html>
+  </html>
+  
