@@ -39,10 +39,51 @@ $("clearProduct").onclick=()=>{["productKey","pName","pCategory","pPrice","pImag
 $("saveProduct").onclick=async()=>{let k=$("productKey").value||push(ref(db,"products")).key;let p={name:$("pName").value.trim(),category:$("pCategory").value.trim(),price:Number($("pPrice").value),image:$("pImage").value.trim(),description:$("pDescription").value.trim(),alcohol:$("pAlcohol").checked,active:$("pActive").checked};if(!p.name||!p.category||!p.price){return alert("Preencha nome, categoria e preço.")}await set(ref(db,"products/"+k),p);alert("Produto salvo!");$("clearProduct").click()};
 $("seedBtn").onclick=async()=>{if(!confirm("Importar os produtos iniciais? Produtos existentes serão mantidos e os mesmos IDs poderão ser duplicados."))return;for(const p of INITIAL_PRODUCTS){let k=push(ref(db,"products")).key;await set(ref(db,"products/"+k),{...p,active:true})}alert("Produtos importados!")};
 $("saveSettings").onclick=async()=>{await set(ref(db,"settings"),{whatsapp:$("sWhatsapp").value.trim(),pixKey:$("sPix").value.trim(),deliveryFee:Number($("sFee").value)||0,storeName:$("sName").value.trim()||"Ligeirinho ⚡",storeDescription:$("sDesc").value.trim()});alert("Configurações salvas!")};
-function renderOrders(o){let arr=Object.entries(o).sort((a,b)=>(b[1].createdAt||0)-(a[1].createdAt||0));$("ordersList").innerHTML=arr.length?arr.map(([k,x])=>`<div class="order"><b>${esc(x.customer?.name||"Cliente")}</b> <span class="status">${esc(x.status||"novo")}</span><div class="muted">${new Date(x.createdAt||Date.now()).toLocaleString("pt-BR")} · ${money(x.total)}</div><div style="margin-top:8px">${(x.items||[]).map(i=>`${esc(i.name)} x${i.quantity}`).join(" · ")}</div><div style="margin-top:8px"><button class="btn gold" onclick="statusOrder('${k}','pago')">Pago</button> <button class="btn dark" onclick="statusOrder('${k}','comprando')">Comprando</button> <button class="btn dark" onclick="statusOrder('${k}','em_entrega')">Em entrega</button> <button class="btn dark" onclick="statusOrder('${k}','entregue')">Entregue</button></div></div>`).join(""):"Nenhum pedido."}
+function renderOrders(o){
+  let arr=Object.entries(o).sort((a,b)=>(b[1].createdAt||0)-(a[1].createdAt||0));
+  if(arr.length===0){
+    $("ordersList").innerHTML="Nenhum pedido.";
+    return;
+  }
+  let html=`<button class="btn danger" onclick="limparTodosPedidos()" style="margin-bottom:14px">🗑 Limpar TODOS os pedidos</button>`;
+  html+=arr.map(([k,x])=>`<div class="order">
+<b>${esc(x.customer?.name||"Cliente")}</b> <span class="status">${esc(x.status||"novo")}</span>
+<div class="muted">${new Date(x.createdAt||Date.now()).toLocaleString("pt‑BR")} · ${money(x.total)}</div>
+<div style="margin-top:8px">${(x.items||[]).map(i=>`${esc(i.name)} x${i.quantity}`).join(" · ")}</div>
+<div style="margin-top:8px">
+<button class="btn gold" onclick="statusOrder('${k}','pago')">Pago</button>
+<button class="btn dark" onclick="statusOrder('${k}','comprando')">Comprando</button>
+<button class="btn dark" onclick="statusOrder('${k}','em_entrega')">Em entrega</button>
+<button class="btn dark" onclick="statusOrder('${k}','entregue')">Entregue</button>
+<button class="btn danger" onclick="apagarUmPedido('${k}')">Apagar este</button>
+</div>
+</div>`).join("");
+  $("ordersList").innerHTML=html;
+}
 window.statusOrder=async(k,status)=>update(ref(db,"orders/"+k),{status});
+window.apagarUmPedido=async(chavePedido)=>{
+  if(!confirm("Deseja apagar esse pedido definitivamente?")) return;
+  try{
+    await remove(ref(db,"orders/"+chavePedido));
+    alert("Pedido removido!");
+  }catch(e){
+    console.error(e);
+    alert("Falha ao remover: verifique as regras do Firebase.");
+  }
+};
+window.limparTodosPedidos=async()=>{
+  if(!confirm("⚠️ CONFIRMA? TODOS os pedidos serão apagados SEM POSSIBILIDADE DE RECUPERAÇÃO!")) return;
+  try{
+    await remove(ref(db,"orders"));
+    alert("Todos os registros de pedidos foram limpos!");
+  }catch(e){
+    console.error(e);
+    alert("Falha ao limpar: verifique permissões nas regras do Realtime Database.");
+  }
+};
 function money(v){return Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}
 function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
 document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.querySelectorAll(".tabcontent").forEach(x=>x.classList.add("hidden"));$(b.dataset.tab).classList.remove("hidden")});
 </script>
-</body></html>
+</body>
+</html>
