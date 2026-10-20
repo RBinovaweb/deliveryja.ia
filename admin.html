@@ -30,7 +30,25 @@ let products={};
 $("loginBtn").onclick=async()=>{try{await signInWithEmailAndPassword(auth,$("email").value.trim(),$("password").value);$("loginMsg").textContent=""}catch(e){$("loginMsg").textContent="Login inválido: "+e.message}};
 $("logout").onclick=()=>signOut(auth);
 onAuthStateChanged(auth,user=>{if(user){$("loginBox").classList.add("hidden");$("panel").style.display="block";$("logout").classList.remove("hidden");load()}else{$("loginBox").classList.remove("hidden");$("panel").style.display="none";$("logout").classList.add("hidden")}});
-function load(){onValue(ref(db,"products"),s=>{products=s.val()||{};renderProducts();fillCategories()});onValue(ref(db,"settings"),s=>{let x=s.val()||{};$("sWhatsapp").value=x.whatsapp||"5527995812932";$("sPix").value=x.pixKey||"14210186759";$("sFee").value=x.deliveryFee||0;$("sName").value=x.storeName||"Ligeirinho ⚡";$("sDesc").value=x.storeDescription||"Seu pedido rápido, fácil e direto."});onValue(ref(db,"orders"),s=>renderOrders(s.val()||{}))}
+function load(){
+  onValue(ref(db,"products"),s=>{
+    products=s.val()||{};
+    renderProducts();
+    fillCategories();
+  });
+  onValue(ref(db,"settings"),s=>{
+    let x=s.val()||{};
+    $("sWhatsapp").value=x.whatsapp||"5527995812932";
+    $("sPix").value=x.pixKey||"14210186759";
+    $("sFee").value=x.deliveryFee||0;
+    $("sName").value=x.storeName||"Ligeirinho ⚡";
+    $("sDesc").value=x.storeDescription||"Seu pedido rápido, fácil e direto.";
+  });
+  onValue(ref(db,"orders"),s=>{
+    const dados = s.exists() ? s.val() : {};
+    renderOrders(dados);
+  });
+}
 function renderProducts(){let arr=Object.entries(products);$("productsList").innerHTML=arr.length?arr.map(([key,p])=>`<div class="product-row"><img src="${esc(p.image||"")}"><div><b>${esc(p.name)}</b><div class="muted">${esc(p.category)} · ${money(p.price)} · ${p.active===false?"indisponível":"disponível"}</div></div><div class="actions"><button class="btn gold" onclick="editProduct('${key}')">Editar</button> <button class="btn danger" onclick="deleteProduct('${key}')">Excluir</button></div></div>`).join(""):"Nenhum produto cadastrado."}
 function fillCategories(){let cats=[...new Set(Object.values(products).map(p=>p.category).filter(Boolean))];$("categoryList").innerHTML=cats.map(x=>`<option value="${esc(x)}">`).join("")}
 window.editProduct=k=>{let p=products[k];$("productKey").value=k;$("pName").value=p.name||"";$("pCategory").value=p.category||"";$("pPrice").value=p.price||0;$("pImage").value=p.image||"";$("pDescription").value=p.description||"";$("pAlcohol").checked=!!p.alcohol;$("pActive").checked=p.active!==false;scrollTo({top:0,behavior:"smooth"})};
