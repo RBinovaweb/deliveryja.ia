@@ -63,7 +63,91 @@ window.openCart=()=>{document.getElementById("cart").classList.add("open");docum
 window.closeCart=()=>{document.getElementById("cart").classList.remove("open");document.getElementById("overlay").classList.remove("show");document.body.style.overflow=""};
 window.copyPix=async()=>{try{await navigator.clipboard.writeText(settings.pixKey||"");toast("Chave Pix copiada!")}catch(e){toast("Não foi possível copiar.")}};
 function validate(){for(const [id,msg] of [["customerName","Digite o nome."],["customerPhone","Digite o WhatsApp."],["customerCep","Digite o CEP."],["customerStreet","Digite a rua."],["customerNumber","Digite o número."],["customerNeighborhood","Digite o bairro."]]){let v=document.getElementById(id).value.trim();if(!v){alert(msg);document.getElementById(id).focus();return false}}if(document.getElementById("customerPhone").value.replace(/\D/g,"").length<10){alert("Digite um WhatsApp válido.");return false}return true}
-window.sendOrder=async()=>{if(!cart.length)return alert("Seu carrinho está vazio.");if(!validate())return;let get=id=>document.getElementById(id).value.trim();let s=subtotal(),fee=Number(settings.deliveryFee)||0;let order={createdAt:Date.now(),customer:{name:get("customerName"),phone:get("customerPhone"),cep:get("customerCep"),street:get("customerStreet"),number:get("customerNumber"),neighborhood:get("customerNeighborhood"),complement:get("customerComplement"),reference:get("customerReference")},items:cart.map(x=>({...x})),subtotal:s,deliveryFee:fee,total:s+fee,observation:get("orderObservation"),status:"novo"};try{await push(ref(db,"orders"),order)}catch(e){console.error(e)}let msg=`⚡ *NOVO PEDIDO — LIGEIRINHO*\\n━━━━━━━━━━━━━━━━━━━━\\n\\n👤 *CLIENTE*\\nNome: ${order.customer.name}\\nWhatsApp: ${order.customer.phone}\\n\\n📍 *ENTREGA*\\nCEP: ${order.customer.cep}\\nEndereço: ${order.customer.street}, ${order.customer.number}\\nBairro: ${order.customer.neighborhood}\\n`;if(order.customer.complement)msg+=`Complemento: ${order.customer.complement}\\n`;if(order.customer.reference)msg+=`Referência: ${order.customer.reference}\\n`;msg+="\\n🛒 *ITENS*\\n━━━━━━━━━━━━━━━━━━━━\\n";order.items.forEach((x,i)=>{msg+=`${i+1}. ${x.name}\\n   Qtd: ${x.quantity}\\n   Unitário: ${money(x.price)}\\n   Subtotal: ${money(x.price*x.quantity)}\\n`;if(x.observation)msg+=`   Obs.: ${x.observation}\\n`;msg+="\\n"});msg+=`💰 *TOTAL: ${money(order.total)}*\\n💳 Pix: ${settings.pixKey}\\n`;if(order.observation)msg+=`\\n📝 Observação: ${order.observation}\\n`;msg+="\\n⚡ Pedido enviado pelo Ligeirinho.";window.open(`https://wa.me/${String(settings.whatsapp).replace(/\\D/g,"")}?text=${encodeURIComponent(msg)}`,"_blank")};
+window.sendOrder=async()=>{
+  if(!cart.length) return alert("Seu carrinho está vazio.");
+  if(!validate()) return;
+
+  let get=id=>document.getElementById(id).value.trim();
+  let s=subtotal(), fee=Number(settings.deliveryFee)||0;
+
+  let order={
+    createdAt:Date.now(),
+    customer:{
+      name:get("customerName"),
+      phone:get("customerPhone"),
+      cep:get("customerCep"),
+      street:get("customerStreet"),
+      number:get("customerNumber"),
+      neighborhood:get("customerNeighborhood"),
+      complement:get("customerComplement"),
+      reference:get("customerReference")
+    },
+    items:cart.map(x=>({...x})),
+    subtotal:s,
+    deliveryFee:fee,
+    total:s+fee,
+    observation:get("orderObservation"),
+    status:"novo"
+  };
+
+  try{
+    await push(ref(db,"orders"),order);
+  }catch(e){
+    console.error(e);
+  }
+
+  let msg=`⚡ *NOVO PEDIDO — LIGEIRINHO*
+━━━━━━━━━━━━━━━━━━━━
+
+👤 *CLIENTE*
+Nome: ${order.customer.name}
+WhatsApp: ${order.customer.phone}
+
+📍 *ENTREGA*
+CEP: ${order.customer.cep}
+Endereço: ${order.customer.street}, ${order.customer.number}
+Bairro: ${order.customer.neighborhood}
+`;
+
+  if(order.customer.complement) msg+=`Complemento: ${order.customer.complement}
+`;
+  if(order.customer.reference) msg+=`Referência: ${order.customer.reference}
+`;
+
+  msg+=`
+
+🛒 *ITENS*
+━━━━━━━━━━━━━━━━━━━━
+`;
+
+  order.items.forEach((x,i)=>{
+    msg+=`${i+1}. ${x.name}
+   Qtd: ${x.quantity}
+   Unitário: ${money(x.price)}
+   Subtotal: ${money(x.price*x.quantity)}
+`;
+    if(x.observation) msg+=`   Obs.: ${x.observation}
+`;
+    msg+=`
+`;
+  });
+
+  msg+=`💰 *TOTAL: ${money(order.total)}*
+💳 Pix: ${settings.pixKey}
+`;
+
+  if(order.observation) msg+=`
+
+📝 Observação: ${order.observation}
+`;
+
+  msg+=`
+
+⚡ Pedido enviado pelo Ligeirinho.`;
+
+  window.open(`https://wa.me/${String(settings.whatsapp).replace(/\D/g,"")}?text=${encodeURIComponent(msg)}`,"_blank");
+};
+
 function toast(m){let t=document.getElementById("toast");t.textContent=m;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2500)}
 ["customerName","customerPhone","customerCep","customerStreet","customerNumber","customerNeighborhood","customerComplement","customerReference"].forEach(id=>{let e=document.getElementById(id),s=localStorage.getItem("ligeirinho_"+id);if(s)e.value=s;e.addEventListener("input",()=>localStorage.setItem("ligeirinho_"+id,e.value))});
 document.getElementById("customerCep").addEventListener("input",e=>{let v=e.target.value.replace(/\D/g,"").slice(0,8);if(v.length>5)v=v.slice(0,5)+"-"+v.slice(5);e.target.value=v});
