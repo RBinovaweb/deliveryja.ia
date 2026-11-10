@@ -18,7 +18,7 @@ export const INITIAL_PRODUCTS = [
     "price": 99.90,
     "isPromo": true,
     "image": "https://unsplash.com",
-    "description": "Incluso no combo: 1 Garrafa de Whisky White Horse (Cavalo Branco) 1L, 2 Sucos de Citrus Lata e 10 unidades de pedras de gelo grande sabor Maracujá."
+    "description": "Incluso no combo: 1 Garrafa de Whisky White Horse (Cavalo Branco) 1L, 2 Sucos de Citrus Cheios e 10 unidades de pedras de gelo grande sabor Maracujá."
   },
   {
     "id": 3,
